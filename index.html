@@ -38,7 +38,7 @@
         .btn:disabled { background: #9ca3af !important; pointer-events: none; }
         .result-header { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 5px; }
         .btn-clear-text { background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
-        #result { width: 100%; height: 180px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; box-sizing: border-box; background: transparent; color: inherit; }
+        #result { width: 100%; height: 200px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; box-sizing: border-box; background: transparent; color: inherit; }
         .filter-panel { margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
         .btn-filter { background: #475569; padding: 6px 10px; border-radius: 4px; color: white; border: none; width: 100%; font-size: 12px; margin-bottom: 5px; }
         .btn-smart-join { background: #0284c7; padding: 8px 10px; border-radius: 4px; color: white; border: none; width: 100%; font-size: 13px; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
@@ -54,8 +54,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Cáo OCR Pro 🦊</h1>
-        <p class="subtitle">Kéo ngang khay ảnh • Bóc siêu tốc</p>
+        <h1>Cáo OCR Pro (Last Version) 🦊</h1>
+        <p class="subtitle">Kéo ngang khay ảnh • Bóc siêu tốc (Bản Tối Ưu RAM)</p>
         
         <input type="file" id="file-input" multiple accept="image/*" style="display: none;">
         <div id="drop-zone" tabindex="0">
@@ -83,8 +83,7 @@
         <textarea id="result" placeholder="Chữ sẽ hiện ở đây..."></textarea>
         
         <div class="filter-panel">
-            <!-- Nút quyền lực mới được thêm vào -->
-            <button id="smart-join-btn" class="btn-smart-join">🪄 Sửa lỗi chữ bị đứt xuống dòng</button>
+            <button id="smart-join-btn" class="btn-smart-join">🪄 Sửa lỗi chữ đứt dòng & Form A B C D</button>
             <button id="add-filter-btn" class="btn-filter">🚫 Bôi đen chữ rác & chạm vào đây để chặn</button>
             <div id="blacklist-container" class="blacklist-container"></div>
         </div>
@@ -130,22 +129,29 @@
             }
         });
 
-        // --- THUẬT TOÁN NỐI DÒNG THÔNG MINH ---
+        // --------------------------------------------------------
+        // THUẬT TOÁN NỐI DÒNG & CHUẨN HÓA TRẮC NGHIỆM (MỚI NHẤT)
+        // --------------------------------------------------------
         smartJoinBtn.addEventListener('click', () => {
             let text = resultEl.value;
             if (!text.trim()) { showToast("⚠️ Chưa có chữ để sửa", "error"); return; }
             
-            // 1. Nối dòng nếu dòng sau bắt đầu bằng chữ cái viết thường (tiếng Việt có dấu)
-            text = text.replace(/\n([a-zàáãạảăắằẳẵặâấầẩẫậèéẹẻẽêềếểễệđìíĩỉịòóõọỏôốồổỗộơớờởỡợùúũụủưứừửữựỳýỹỷỵ])/g, ' $1');
+            // 1. Tiêu diệt các tàn dư của nút tròn (oO, O, o, 0) đứng trước A, B, C, D
+            text = text.replace(/(oO|O|o|0)\s*(A|B|C|D)\./g, '$2.');
             
-            // 2. Nối dòng nếu dòng trước KHÔNG kết thúc bằng dấu câu (., :, ?) và dòng sau KHÔNG phải là A, B, C, D hay Câu...
+            // 2. Ép các đáp án A., B., C., D. bắt buộc phải nằm ở đầu một dòng mới
+            text = text.replace(/\s+(A|B|C|D)\./g, '\n$1.');
+            
+            // 3. Nối các câu bị rớt dòng
+            text = text.replace(/\n([a-zàáãạảăắằẳẵặâấầẩẫậèéẹẻẽêềếểễệđìíĩỉịòóõọỏôốồổỗộơớờởỡợùúũụủưứừửữựỳýỹỷỵ])/g, ' $1');
             text = text.replace(/([^\.\:\?\n])\n(?!(Câu|Trả lời|A\.|B\.|C\.|D\.|O |\d+\.))/gi, '$1 ');
             
-            // Dọn dẹp dấu cách thừa
+            // 4. Dọn dẹp khoảng trắng thừa và ép lại form cho đẹp
             text = text.replace(/[ \t]{2,}/g, ' ');
+            text = text.replace(/\n{3,}/g, '\n\n').trim();
             
             resultEl.value = text;
-            showToast("🪄 Đã nối các câu bị đứt!", "success");
+            showToast("🪄 Đã chuẩn hóa form trắc nghiệm!", "success");
         });
 
         let blacklist = JSON.parse(localStorage.getItem('cao_ocr_blacklist')) || [];
@@ -246,7 +252,10 @@
             showToast("🎯 Đã đồng bộ khung cắt!", "success");
         });
 
-        async function processOCR(cropDataObj, imgUrl) {
+        // ----------------------------------------------------
+        // LÕI XỬ LÝ OCR (TỐI ƯU RAM - KHỞI TẠO 1 WORKER DUY NHẤT)
+        // ----------------------------------------------------
+        async function processOCR(cropDataObj, imgUrl, sharedWorker = null) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = async () => {
@@ -263,8 +272,16 @@
                     ctx.putImageData(imgData, 0, 0);
                     
                     try {
-                        const result = await Tesseract.recognize(canvas.toDataURL('image/png'), 'vie+eng', { tessedit_pageseg_mode: 6 });
-                        let text = result.data.text.replace(/[|¡—_~\[\]]/g, '');
+                        let resultText = "";
+                        if (sharedWorker) {
+                            const result = await sharedWorker.recognize(canvas.toDataURL('image/png'));
+                            resultText = result.data.text;
+                        } else {
+                            const result = await Tesseract.recognize(canvas.toDataURL('image/png'), 'vie+eng', { tessedit_pageseg_mode: 6 });
+                            resultText = result.data.text;
+                        }
+
+                        let text = resultText.replace(/[|¡—_~\[\]]/g, '');
                         blacklist.forEach(w => text = text.split(w).join(''));
                         resolve(text.replace(/^\s*[\r\n]/gm, '').trim());
                     } catch (error) { reject(error); }
@@ -289,7 +306,7 @@
             setWorkingState(true); showToast("⏳ Đang bóc ảnh này...", "info", 0);
             try {
                 const data = cropper.getData(true); imageList[currentIndex].cropData = data;
-                const text = await processOCR(data, imageList[currentIndex].url);
+                const text = await processOCR(data, imageList[currentIndex].url, null);
                 appendTextToResult(text); showToast("✨ Xong!", "success");
             } catch (error) { showToast("❌ Lỗi xử lý!", "error"); } 
             finally { setWorkingState(false); }
@@ -297,22 +314,38 @@
 
         batchProcessBtn.addEventListener('click', async () => {
             if (!cropper || imageList.length === 0) return;
-            setWorkingState(true); showToast("⚡ Đang bóc toàn bộ...", "info", 0);
+            setWorkingState(true); 
+            showToast("⚡ Khởi động lõi AI...", "info", 0);
+            
             imageList[currentIndex].cropData = cropper.getData(true);
             let ok = 0;
-            for (let i = 0; i < imageList.length; i++) {
-                try {
-                    const text = await processOCR(imageList[i].cropData, imageList[i].url);
-                    if (text) { appendTextToResult(text); ok++; }
-                } catch (e) {}
+
+            try {
+                const worker = await Tesseract.createWorker('vie+eng');
+                await worker.setParameters({ tessedit_pageseg_mode: "6" });
+
+                for (let i = 0; i < imageList.length; i++) {
+                    showToast(`⏳ Đang bóc ảnh ${i + 1}/${imageList.length}...`, "info", 0);
+                    try {
+                        const text = await processOCR(imageList[i].cropData, imageList[i].url, worker);
+                        if (text) { appendTextToResult(text); ok++; }
+                    } catch (e) { console.error("Lỗi ảnh:", e); }
+                }
+
+                await worker.terminate(); 
+                showToast(`✨ Xong! Đã bóc ${ok}/${imageList.length} ảnh`, "success");
+            } catch (error) {
+                console.error(error);
+                showToast("❌ Lỗi AI! Hãy tải lại trang.", "error");
             }
-            showToast(`✨ Xong! Đã bóc ${ok}/${imageList.length} ảnh`, "success");
+            
             setWorkingState(false);
         });
 
         resultEl.addEventListener('input', () => { copyBtn.disabled = resultEl.value.trim().length === 0; });
         copyBtn.addEventListener('click', () => {
-            resultEl.select(); document.execCommand('copy'); showToast("✔️ Đã copy!", "success");
+            resultEl.select(); document.execCommand('copy');
+            showToast("✔️ Đã copy!", "success");
         });
     </script>
 </body>
