@@ -8,20 +8,14 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
-        /* Tự động Dark Mode / Light Mode */
         :root { color-scheme: light dark; --bg: #f3f4f6; --container: #ffffff; --border: #e2e8f0; --primary: #e85d04; }
         @media (prefers-color-scheme: dark) { :root { --bg: #111827; --container: #1f2937; --border: #374151; } }
-        
         body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 10px; background: var(--bg); font-size: 14px; }
         .container { background: var(--container); padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; }
         h1 { text-align: center; margin: 0 0 5px 0; color: var(--primary); font-size: 22px; }
         .subtitle { text-align: center; margin: 0 0 15px 0; font-size: 12px; opacity: 0.8; }
-        
-        /* Dropzone siêu gọn */
         #drop-zone { border: 2px dashed #9ca3af; border-radius: 8px; padding: 20px 10px; text-align: center; transition: 0.2s; cursor: pointer; }
         #drop-zone:active { background: rgba(232, 93, 4, 0.1); border-color: var(--primary); }
-        
-        /* Khay ảnh VUỐT NGANG */
         .toolbar { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
         .toolbar h3 { margin: 0; font-size: 15px; }
         .gallery { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 10px; padding: 10px 0; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
@@ -31,8 +25,6 @@
         .thumb-wrapper.active { border-color: var(--primary); transform: scale(1.02); }
         .thumb-wrapper img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
         .delete-btn { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; display: flex; align-items: center; justify-content: center; z-index: 2; }
-        
-        /* Khu vực cắt ảnh */
         #crop-area { max-height: 350px; margin-top: 10px; display: none; }
         .action-panel { margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; border: 1px solid var(--border); display: none; }
         .btn-group { display: flex; gap: 8px; margin-top: 8px; }
@@ -44,25 +36,19 @@
         .btn-primary { background: var(--primary); width: 100%; margin-top: 10px; }
         .btn:active { opacity: 0.8; }
         .btn:disabled { background: #9ca3af !important; pointer-events: none; }
-        
-        /* Khu vực Text Result */
         .result-header { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 5px; }
         .btn-clear-text { background: transparent; color: #ef4444; border: 1px solid #ef4444; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer; }
         #result { width: 100%; height: 180px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; box-sizing: border-box; background: transparent; color: inherit; }
-        
-        /* Blacklist gọn gàng */
         .filter-panel { margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
-        .btn-filter { background: #475569; padding: 6px 10px; border-radius: 4px; color: white; border: none; width: 100%; font-size: 12px; }
-        .blacklist-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        .btn-filter { background: #475569; padding: 6px 10px; border-radius: 4px; color: white; border: none; width: 100%; font-size: 12px; margin-bottom: 5px; }
+        .btn-smart-join { background: #0284c7; padding: 8px 10px; border-radius: 4px; color: white; border: none; width: 100%; font-size: 13px; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
+        .blacklist-container { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
         .bad-word-tag { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 3px 6px; border-radius: 4px; font-size: 11px; display: flex; gap: 4px; }
-        
-        /* TOAST NOTIFICATION (POPUP) */
         #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 30px; color: white; font-weight: bold; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2); white-space: nowrap; }
         #toast.show { opacity: 1; }
         .toast-info { background: #0ea5e9; }
         .toast-success { background: #10b981; }
         .toast-error { background: #ef4444; }
-        
         canvas { display: none; }
     </style>
 </head>
@@ -81,9 +67,7 @@
             <button id="clear-all-btn" class="btn btn-danger" style="display: none;">Xóa hết</button>
         </div>
         <div id="gallery" class="gallery"></div>
-
         <div id="crop-area"><img id="image-to-crop" src=""></div>
-
         <div id="action-panel" class="action-panel">
             <button id="sync-frame-btn" class="btn btn-sync">🎯 Lấy khung này cho TẤT CẢ</button>
             <div class="btn-group">
@@ -99,6 +83,8 @@
         <textarea id="result" placeholder="Chữ sẽ hiện ở đây..."></textarea>
         
         <div class="filter-panel">
+            <!-- Nút quyền lực mới được thêm vào -->
+            <button id="smart-join-btn" class="btn-smart-join">🪄 Sửa lỗi chữ bị đứt xuống dòng</button>
             <button id="add-filter-btn" class="btn-filter">🚫 Bôi đen chữ rác & chạm vào đây để chặn</button>
             <div id="blacklist-container" class="blacklist-container"></div>
         </div>
@@ -107,7 +93,6 @@
         <canvas id="hidden-canvas"></canvas>
     </div>
 
-    <!-- Popup Thông báo -->
     <div id="toast"></div>
 
     <script>
@@ -126,66 +111,68 @@
         const copyBtn = document.getElementById('copy-btn');
         const clearTextBtn = document.getElementById('clear-text-btn');
         const addFilterBtn = document.getElementById('add-filter-btn');
+        const smartJoinBtn = document.getElementById('smart-join-btn');
         const blacklistContainer = document.getElementById('blacklist-container');
         const toast = document.getElementById('toast');
 
-        let imageList = [];
-        let currentIndex = -1;
-        let cropper = null;
-        let toastTimeout;
+        let imageList = []; let currentIndex = -1; let cropper = null; let toastTimeout;
 
-        // --- POPUP THÔNG BÁO ---
         function showToast(msg, type = 'info', duration = 2500) {
-            toast.textContent = msg;
-            toast.className = `toast-${type} show`;
+            toast.textContent = msg; toast.className = `toast-${type} show`;
             clearTimeout(toastTimeout);
-            if (duration > 0) {
-                toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, duration);
-            }
+            if (duration > 0) toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, duration);
         }
 
-        // --- XÓA TRẮNG TEXT ---
         clearTextBtn.addEventListener('click', () => {
             if (resultEl.value.trim() === '') return;
             if (confirm("Đức muốn xóa sạch văn bản kết quả?")) {
-                resultEl.value = '';
-                copyBtn.disabled = true;
-                showToast("🗑️ Đã xóa trắng", "info");
+                resultEl.value = ''; copyBtn.disabled = true; showToast("🗑️ Đã xóa trắng", "info");
             }
         });
 
-        // --- BLACKLIST DẠY AI ---
+        // --- THUẬT TOÁN NỐI DÒNG THÔNG MINH ---
+        smartJoinBtn.addEventListener('click', () => {
+            let text = resultEl.value;
+            if (!text.trim()) { showToast("⚠️ Chưa có chữ để sửa", "error"); return; }
+            
+            // 1. Nối dòng nếu dòng sau bắt đầu bằng chữ cái viết thường (tiếng Việt có dấu)
+            text = text.replace(/\n([a-zàáãạảăắằẳẵặâấầẩẫậèéẹẻẽêềếểễệđìíĩỉịòóõọỏôốồổỗộơớờởỡợùúũụủưứừửữựỳýỹỷỵ])/g, ' $1');
+            
+            // 2. Nối dòng nếu dòng trước KHÔNG kết thúc bằng dấu câu (., :, ?) và dòng sau KHÔNG phải là A, B, C, D hay Câu...
+            text = text.replace(/([^\.\:\?\n])\n(?!(Câu|Trả lời|A\.|B\.|C\.|D\.|O |\d+\.))/gi, '$1 ');
+            
+            // Dọn dẹp dấu cách thừa
+            text = text.replace(/[ \t]{2,}/g, ' ');
+            
+            resultEl.value = text;
+            showToast("🪄 Đã nối các câu bị đứt!", "success");
+        });
+
         let blacklist = JSON.parse(localStorage.getItem('cao_ocr_blacklist')) || [];
         function renderBlacklist() {
             blacklistContainer.innerHTML = '';
             blacklist.forEach((word, index) => {
-                const tag = document.createElement('div');
-                tag.className = 'bad-word-tag';
+                const tag = document.createElement('div'); tag.className = 'bad-word-tag';
                 tag.innerHTML = `<span>${word.replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t]))}</span> <span onclick="removeBlacklist(${index})" style="cursor:pointer; font-weight:bold;">✖</span>`;
                 blacklistContainer.appendChild(tag);
             });
         }
         function removeBlacklist(index) {
-            blacklist.splice(index, 1);
-            localStorage.setItem('cao_ocr_blacklist', JSON.stringify(blacklist));
-            renderBlacklist();
+            blacklist.splice(index, 1); localStorage.setItem('cao_ocr_blacklist', JSON.stringify(blacklist)); renderBlacklist();
         }
         addFilterBtn.addEventListener('click', () => {
             const selectedText = resultEl.value.substring(resultEl.selectionStart, resultEl.selectionEnd).trim();
             if (!selectedText) return showToast("⚠️ Phải bôi đen chữ trước!", "error");
             if (!blacklist.includes(selectedText)) {
-                blacklist.push(selectedText);
-                localStorage.setItem('cao_ocr_blacklist', JSON.stringify(blacklist));
-                renderBlacklist();
+                blacklist.push(selectedText); localStorage.setItem('cao_ocr_blacklist', JSON.stringify(blacklist)); renderBlacklist();
                 let text = resultEl.value;
                 blacklist.forEach(w => text = text.split(w).join(''));
                 resultEl.value = text.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
-                showToast(`🚫 Đã đưa vào danh sách đen`, "success");
+                showToast(`🚫 Đã chặn từ này`, "success");
             }
         });
         renderBlacklist();
 
-        // --- QUẢN LÝ ẢNH ---
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', (e) => addFiles(e.target.files));
         document.addEventListener('paste', (e) => {
@@ -201,14 +188,11 @@
             let added = false;
             for (let file of files) {
                 if (file.type.startsWith('image/')) {
-                    imageList.push({ id: Date.now(), url: URL.createObjectURL(file), cropData: null });
-                    added = true;
+                    imageList.push({ id: Date.now(), url: URL.createObjectURL(file), cropData: null }); added = true;
                 }
             }
             if (added) {
-                renderGallery();
-                if (currentIndex === -1) selectImage(0);
-                showToast("📸 Đã thêm ảnh", "success", 1500);
+                renderGallery(); if (currentIndex === -1) selectImage(0); showToast("📸 Đã thêm ảnh", "success", 1500);
             }
             fileInput.value = '';
         }
@@ -217,8 +201,7 @@
             gallery.innerHTML = ''; imgCount.textContent = imageList.length;
             clearAllBtn.style.display = imageList.length > 0 ? 'block' : 'none';
             imageList.forEach((img, index) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = `thumb-wrapper ${index === currentIndex ? 'active' : ''}`;
+                const wrapper = document.createElement('div'); wrapper.className = `thumb-wrapper ${index === currentIndex ? 'active' : ''}`;
                 const imgEl = document.createElement('img'); imgEl.src = img.url; imgEl.onclick = () => selectImage(index);
                 const delBtn = document.createElement('button'); delBtn.className = 'delete-btn'; delBtn.innerHTML = '✖';
                 delBtn.onclick = (e) => { e.stopPropagation(); deleteImage(index); };
@@ -263,7 +246,6 @@
             showToast("🎯 Đã đồng bộ khung cắt!", "success");
         });
 
-        // --- XỬ LÝ LÕI OCR ---
         async function processOCR(cropDataObj, imgUrl) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -308,8 +290,7 @@
             try {
                 const data = cropper.getData(true); imageList[currentIndex].cropData = data;
                 const text = await processOCR(data, imageList[currentIndex].url);
-                appendTextToResult(text);
-                showToast("✨ Xong!", "success");
+                appendTextToResult(text); showToast("✨ Xong!", "success");
             } catch (error) { showToast("❌ Lỗi xử lý!", "error"); } 
             finally { setWorkingState(false); }
         });
@@ -331,8 +312,7 @@
 
         resultEl.addEventListener('input', () => { copyBtn.disabled = resultEl.value.trim().length === 0; });
         copyBtn.addEventListener('click', () => {
-            resultEl.select(); document.execCommand('copy');
-            showToast("✔️ Đã copy!", "success");
+            resultEl.select(); document.execCommand('copy'); showToast("✔️ Đã copy!", "success");
         });
     </script>
 </body>
